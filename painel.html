@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f4f5fb;
+      color: #20223a;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    header {
+      background: linear-gradient(120deg,#6558e8,#a34de0);
+      color: white;
+      padding: 25px;
+      border-radius: 18px;
+      margin-bottom: 20px;
+    }
+
+    header h1 { margin: 0 0 8px; }
+    header p { margin: 0; opacity: .9; }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 3px 15px #20223a0c;
+      margin-bottom: 18px;
+    }
+
+    .login {
+      max-width: 420px;
+      margin: 70px auto;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #ddd;
+      border-radius: 9px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    button {
+      border: 0;
+      background: #6558e8;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover { opacity: .9; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap: 14px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 30px;
+      margin-top: 12px;
+      color: #6558e8;
+    }
+
+    .stat span { color: #777; }
+
+    h2 { margin-top: 0; }
+
+    .ranking-item {
+      display: grid;
+      grid-template-columns: 42px 1fr 65px;
+      gap: 12px;
+      align-items: center;
+      margin: 18px 0;
+    }
+
+    .position {
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .bar-bg {
+      height: 12px;
+      background: #eee;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 7px;
+    }
+
+    .bar {
+      height: 100%;
+      background: linear-gradient(90deg,#6558e8,#bd64e8);
+      border-radius: 20px;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th { background: #f7f6ff; }
+
+    .filter {
+      max-width: 350px;
+    }
+
+    .muted { color: #777; }
+    .error { color: #c62828; }
+
+    #dashboard { display: none; }
+    #status { margin-top: 12px; }
+
+    @media(max-width:700px) {
+      body { padding: 12px; }
+      .stats { grid-template-columns: repeat(2,1fr); }
+      .stat strong { font-size: 25px; }
+      header { padding: 20px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <section id="login" class="card login">
+    <h2>🔐 Painel do Professor</h2>
+    <p class="muted">Digite sua senha para consultar os resultados.</p>
+
+    <input
+      id="senha"
+      type="password"
+      placeholder="Senha do professor"
+      autocomplete="current-password"
+    >
+
+    <button onclick="entrar()">Acessar painel</button>
+    <p id="loginStatus"></p>
+  </section>
+
+  <main id="dashboard">
+    <header>
+      <h1>🏆 Quiz da Informática</h1>
+      <p>Painel de desempenho e ranking das equipes</p>
+    </header>
+
+    <div class="stats">
+      <div class="card stat">
+        <span>Alunos</span>
+        <strong id="totalAlunos">0</strong>
+      </div>
+
+      <div class="card stat">
+        <span>Equipes</span>
+        <strong id="totalEquipes">0</strong>
+      </div>
+
+      <div class="card stat">
+        <span>Média geral</span>
+        <strong id="mediaGeral">0%</strong>
+      </div>
+
+      <div class="card stat">
+        <span>Equipe líder</span>
+        <strong id="melhorEquipe" style="font-size:20px">-</strong>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2>🥇 Ranking das equipes</h2>
+      <p class="muted">
+        Classificação pela média percentual dos participantes.
+      </p>
+      <div id="ranking"></div>
+    </section>
+
+    <section class="card">
+      <h2>📊 Notas individuais</h2>
+
+      <input
+        class="filter"
+        id="filtro"
+        placeholder="Pesquisar aluno ou equipe..."
+        oninput="filtrar()"
+      >
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Aluno</th>
+              <th>Equipe</th>
+              <th>Pontos</th>
+              <th>Acertos</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody id="tabela"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <button onclick="atualizar()">🔄 Atualizar resultados</button>
+    <p id="status" class="muted"></p>
+  </main>
+
+</div>
+
+<script>
+  let senhaProfessor = "";
+  let listaAlunos = [];
+
+  function entrar() {
+    const senha = document.getElementById("senha").value;
+    const status = document.getElementById("loginStatus");
+
+    if (!senha) {
+      status.textContent = "Digite sua senha.";
+      status.className = "error";
+      return;
+    }
+
+    senhaProfessor = senha;
+    status.textContent = "Verificando acesso...";
+
+    google.script.run
+      .withSuccessHandler(dados => {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        mostrarDados(dados);
+      })
+      .withFailureHandler(erro => {
+        status.textContent = erro.message || "Não foi possível acessar.";
+        status.className = "error";
+        senhaProfessor = "";
+      })
+      .getDashboardData(senha);
+  }
+
+  function atualizar() {
+    document.getElementById("status").textContent =
+      "Atualizando resultados...";
+
+    google.script.run
+      .withSuccessHandler(dados => {
+        mostrarDados(dados);
+        document.getElementById("status").textContent =
+          "Resultados atualizados com sucesso.";
+      })
+      .withFailureHandler(erro => {
+        document.getElementById("status").textContent =
+          erro.message || "Erro ao atualizar.";
+      })
+      .getDashboardData(senhaProfessor);
+  }
+
+  function mostrarDados(dados) {
+    listaAlunos = dados.alunos || [];
+
+    document.getElementById("totalAlunos").textContent =
+      dados.totalAlunos;
+
+    document.getElementById("totalEquipes").textContent =
+      dados.totalEquipes;
+
+    document.getElementById("mediaGeral").textContent =
+      dados.mediaGeral + "%";
+
+    document.getElementById("melhorEquipe").textContent =
+      dados.melhorEquipe;
+
+    mostrarRanking(dados.equipes || []);
+    filtrar();
+  }
+
+  function mostrarRanking(equipes) {
+    const local = document.getElementById("ranking");
+    local.innerHTML = "";
+
+    if (!equipes.length) {
+      local.textContent = "Ainda não existem resultados.";
+      return;
+    }
+
+    equipes.forEach((equipe, indice) => {
+      const item = document.createElement("div");
+      item.className = "ranking-item";
+
+      const posicao = document.createElement("div");
+      posicao.className = "position";
+      posicao.textContent = ["🥇","🥈","🥉"][indice] ||
+        (indice + 1) + "º";
+
+      const conteudo = document.createElement("div");
+
+      const nome = document.createElement("strong");
+      nome.textContent = equipe.nome;
+
+      const detalhe = document.createElement("div");
+      detalhe.className = "muted";
+      detalhe.textContent =
+        equipe.participantes + " participante(s)";
+
+      const fundo = document.createElement("div");
+      fundo.className = "bar-bg";
+
+      const barra = document.createElement("div");
+      barra.className = "bar";
+      barra.style.width = Math.max(
+        0, Math.min(100, equipe.media)
+      ) + "%";
+
+      fundo.appendChild(barra);
+      conteudo.append(nome, detalhe, fundo);
+
+      const media = document.createElement("strong");
+      media.textContent = equipe.media + "%";
+
+      item.append(posicao, conteudo, media);
+      local.appendChild(item);
+    });
+  }
+
+  function filtrar() {
+    const termo = document.getElementById("filtro")
+      .value.toLowerCase();
+
+    const tabela = document.getElementById("tabela");
+    tabela.innerHTML = "";
+
+    const encontrados = listaAlunos.filter(aluno =>
+      aluno.nome.toLowerCase().includes(termo) ||
+      aluno.equipe.toLowerCase().includes(termo)
+    );
+
+    encontrados.forEach(aluno => {
+      const linha = document.createElement("tr");
+
+      [
+        aluno.data,
+        aluno.nome,
+        aluno.equipe,
+        aluno.pontos + "/100",
+        aluno.acertos + "/" + aluno.total,
+        aluno.percentual + "%"
+      ].forEach(valor => {
+        const celula = document.createElement("td");
+        celula.textContent = valor;
+        linha.appendChild(celula);
+      });
+
+      tabela.appendChild(linha);
+    });
+
+    if (!encontrados.length) {
+      const linha = document.createElement("tr");
+      const celula = document.createElement("td");
+      celula.colSpan = 6;
+      celula.textContent = "Nenhum resultado encontrado.";
+      linha.appendChild(celula);
+      tabela.appendChild(linha);
+    }
+  }
+
+  document.getElementById("senha").addEventListener(
+    "keydown", evento => {
+      if (evento.key === "Enter") entrar();
+    }
+  );
+</script>
+</body>
+</html>
