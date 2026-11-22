@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafio da Informática</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#e8e5ff,#ffe4f1);color:#252440;min-height:100vh}
+header{text-align:center;padding:25px 12px}
+header h1{font-size:clamp(28px,6vw,46px);color:#6253df;margin:10px}
+header p{color:#666}
+main{max-width:760px;margin:15px auto;padding:15px}
+.card{background:white;padding:25px;border-radius:24px;box-shadow:0 12px 35px #3332}
+input{width:100%;padding:14px;margin:8px 0 16px;border:2px solid #e5e3f2;border-radius:12px;font-size:16px}
+button{border:0;border-radius:13px;padding:14px 20px;font-size:16px;font-weight:bold;cursor:pointer}
+.primary{background:#6558e8;color:white;width:100%}
+.option{display:block;width:100%;text-align:left;background:#f3f2ff;margin:10px 0;color:#282544;border:2px solid transparent}
+.option:hover{border-color:#6558e8}
+.option.correct{background:#d9f7e9;border-color:#20a779}
+.option.wrong{background:#ffe0e5;border-color:#e45d70}
+.option:disabled{cursor:default}
+.meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:bold;color:#777;font-size:14px}
+.progress{height:10px;background:#eee;border-radius:20px;margin:15px 0 25px;overflow:hidden}
+#bar{height:100%;width:0;background:linear-gradient(90deg,#6558e8,#ff70ae)}
+#question{font-size:23px;line-height:1.4}
+#feedback{padding:14px;border-radius:12px;margin-top:15px;line-height:1.5}
+.good{background:#e1f8ed;color:#126c4d}
+.bad{background:#ffe7eb;color:#a72b43}
+.hidden{display:none}
+#result{text-align:center}
+#result h2{color:#6558e8;font-size:35px}
+#result strong{font-size:55px}
+.small{font-size:13px;color:#777}
+footer{text-align:center;padding:25px;color:#777;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h1>⚡ DESAFIO DA INFORMÁTICA</h1>
+<p>Mostre que você domina o Excel! 🧠🏆</p>
+</header>
+<main>
+<section class="card" id="inicio">
+<h2>🚀 Preparado para o desafio?</h2>
+<label>Nome do aluno</label>
+<input id="nome" placeholder="Digite seu nome completo">
+<label>Nome da equipe</label>
+<input id="equipe" placeholder="Ex.: Os Mestres do Excel">
+<p class="small">São 50 perguntas. Cada resposta certa vale 2 pontos.</p>
+<button class="primary" onclick="comecar()">COMEÇAR QUIZ</button>
+</section>
+
+<section class="card hidden" id="jogo">
+<div class="meta">
+<span id="numero"></span>
+<span id="placar">⭐ 0 pontos</span>
+</div>
+<div class="progress"><div id="bar"></div></div>
+<p id="categoria" class="small"></p>
+<h2 id="question"></h2>
+<div id="opcoes"></div>
+<div id="feedback" class="hidden"></div>
+<br>
+<button id="proxima" class="primary hidden" onclick="avancar()">PRÓXIMA PERGUNTA ➜</button>
+</section>
+
+<section class="card hidden" id="result">
+<h2>🏆 DESAFIO CONCLUÍDO!</h2>
+<p id="mensagem"></p>
+<strong id="pontosFinal"></strong>
+<p id="acertosFinal"></p>
+<p id="envio">Enviando seu resultado...</p>
+<button class="primary" onclick="location.reload()">JOGAR NOVAMENTE</button>
+</section>
+</main>
+<footer>Desenvolvido para a aula de informática 💜</footer>
+
+<script>
+// COLE AQUI A URL /exec DO SEU GOOGLE APPS SCRIPT
+const URL_PLANILHA = "COLE_AQUI_SUA_URL_DO_APPS_SCRIPT";
+
+// Perguntas: categoria, enunciado, alternativas, índice da resposta certa, explicação
+const perguntas = [
+["Adição","João tinha R$ 50 e gastou R$ 18. Quanto sobrou?",["28","32","38","68"],1,"50 - 18 = 32."],
+["SOMA","Qual fórmula soma A1 até A10?",["=SOMA(A1:A10)","=SOMAR(A1-A10)","=SE(A1:A10)","=ADICIONAR()"],0,"Use =SOMA(A1:A10)."],
+["Adição","Maria tirou 7, 8 e 9. Qual a soma?",["21","22","24","25"],2,"7 + 8 + 9 = 24."],
+["SOMA","Qual o resultado de =SOMA(10;20;30)?",["30","50","60","100"],2,"O resultado é 60."],
+["Subtração","O que faz =A1-B1?",["Adição","Subtração","Multiplicação","Divisão"],1,"O sinal - representa subtração."],
+["Subtração","Uma equipe tinha 100 pontos e perdeu 35. Quanto restou?",["55","65","75","85"],1,"100 - 35 = 65."],
+["SOMA","Para somar 500 células, qual recurso é mais prático?",["Digitar tudo manualmente","Função SOMA","Função SE","Pintar as células"],1,"SOMA calcula um intervalo."],
+["Adição","A1=15 e B1=25. Quanto resulta =A1+B1?",["10","25","40","45"],2,"15 + 25 = 40."],
+["Adição","Pedro disse que 10+10+10 é 100. Qual é o resultado?",["20","30","100","300"],1,"É 30! Pedro precisa revisar. 😂"],
+["Excel","O Excel calcula automaticamente usando fórmulas?",["Sim","Não","Só aos domingos","Só com internet"],0,"Sim!"],
+["SOMASE","Para que serve SOMASE?",["Contar letras","Somar valores conforme um critério","Mudar a fonte","Apagar linhas"],1,"Soma valores que atendem a um critério."],
+["SOMASE","Camisetas custaram 30 e 40 reais. Quanto soma o critério Camiseta?",["30","40","70","100"],2,"30 + 40 = 70."],
+["SOMASE","Qual fórmula soma B:B quando A:A contém Maçã?",["=SOMA(A:A;B:B)","=SOMASE(A:A;\"Maçã\";B:B)","=SE(A:A;\"Maçã\")","=CONT.SE(B:B)"],1,"SOMASE recebe intervalo, critério e intervalo de soma."],
+["SOMASE","Para somar somente as notas da turma A, qual função usar?",["SOMA","SOMASE","MÁXIMO","HOJE"],1,"SOMASE."],
+["SOMASE","Nomes na coluna A e vendas na B. Como somar as vendas de Carlos?",["=SOMASE(A:A;\"Carlos\";B:B)","=SOMA(A:A)","=SE(B:B;\"Carlos\")","=MÉDIA(A:A)"],0,"O critério é Carlos."],
+["SOMASE","SOMASE soma valores que atendem a um critério?",["Sim","Não","Só pares","Só textos"],0,"Sim!"],
+["SOMASE","Informática vendeu 100 reais e material escolar 200. Quanto soma Informática?",["100","200","300","0"],0,"Somente 100 reais."],
+["SOMASE","Qual critério representa valores maiores ou iguais a 7?",["<7",">7",">=7","=0"],2,"O critério é >=7."],
+["SE","Para que serve a função SE?",["Testar uma condição","Somar tudo","Criar gráficos","Proteger o PC"],0,"Ela verifica uma condição."],
+["SE","Qual resultado de =SE(9>=7;\"APROVADO\";\"REPROVADO\")?",["REPROVADO","APROVADO","9","7"],1,"9 é maior que 7."],
+["SE","Qual resultado de =SE(4>=7;\"APROVADO\";\"REPROVADO\")?",["APROVADO","REPROVADO","4","ERRO"],1,"4 é menor que 7."],
+["SE","Qual fórmula aprova com média maior ou igual a 7?",["=SE(A1>=7;\"APROVADO\";\"REPROVADO\")","=SOMA(A1;7)","=SE(A1;7)","=MÉDIA(A1)"],0,"Essa é a estrutura correta."],
+["SE","Se A1 for exatamente 7, A1>=7 é verdadeiro?",["Sim","Não","Depende da cor","Só com 7,5"],0,"Maior ou igual inclui o 7."],
+["SE","A média mínima é 7. Nota 6,9: aprovado?",["Sim","Não","Nota máxima","Aprovado automaticamente"],1,"6,9 é menor que 7."],
+["SE","Qual função permite ao Excel tomar decisões?",["SOMA","SOMASE","SE","HOJE"],2,"A função SE."],
+["SE","Complete: =SE(A1>=7;\"_____\";\"REPROVADO\")",["APAGADO","APROVADO","FORMATADO","SOMADO"],1,"APROVADO."],
+["SE","Nota 10 apareceu como reprovado. O que verificar?",["Brilho da tela","Fórmula e referências","Impressora","Volume"],1,"Pode haver uma condição invertida."],
+["SE","É possível colocar uma função SE dentro de outra SE?",["Sim","Não","Só no Excel antigo","Só com macro"],0,"Sim, são funções SE aninhadas."],
+["Validação","Para que serve validação de dados?",["Controlar dados permitidos","Aumentar brilho","Criar e-mail","Somar automaticamente"],0,"Ela restringe o preenchimento."],
+["Validação","Permitir somente Manhã, Tarde ou Noite: o que usar?",["Gráfico","Lista suspensa","SOMA","Imagem"],1,"Validação de dados do tipo Lista."],
+["Validação","A nota máxima é 10. Aluno digita 15. O que a validação pode fazer?",["Transformar sempre em 10","Bloquear e mostrar alerta","Desligar o PC","Apagar tudo"],1,"Pode bloquear a entrada inválida."],
+["Validação","É possível criar lista suspensa no Excel?",["Sim","Não","Só no celular","Só com internet"],0,"Sim!"],
+["Validação","Aceitar idades inteiras de 14 a 60: qual regra?",["Texto livre","Número inteiro entre 14 e 60","Data","Lista de cores"],1,"Número inteiro entre limites."],
+["Validação","Uma lista permite três opções. O aluno digita uma quarta. Com alerta Parar?",["Entrada bloqueada","Entrada aceita","Célula verde","Arquivo fecha"],0,"O estilo Parar bloqueia."],
+["Validação","Validação ajuda a evitar erros de preenchimento?",["Sim","Não","Só em gráficos","Só em imagens"],0,"Sim!"],
+["Validação","Para limitar datas, qual tipo de validação usar?",["Data","Texto","Comprimento","Ícones"],0,"Validação do tipo Data."],
+["Validação","A célula aceita inteiros e o aluno digita banana. O que pode impedir?",["Validação de dados","SOMASE","Negrito","Zoom"],0,"A regra de número inteiro."],
+["Validação","Quais campos combinam com listas suspensas em cadastro escolar?",["Turma, turno e situação","Nome, endereço e observação","Telefone e endereço","Qualquer texto"],0,"São campos com opções predefinidas."],
+["Formatação","Para que serve formatação condicional?",["Formatar conforme regras","Somar números","Criar usuários","Enviar e-mails"],0,"Aplica formatos automaticamente."],
+["Formatação","Destacar notas abaixo de 7 em vermelho: qual recurso?",["Validação","Formatação condicional","SOMASE","Congelar painéis"],1,"Regra de valor menor que 7."],
+["Formatação","Nota 10 fica verde automaticamente. O que foi usado?",["Formatação condicional","Subtração","Filtro de texto","Quebra de página"],0,"Uma regra de destaque."],
+["Formatação","A formatação condicional muda a aparência conforme o valor?",["Sim","Não","Só ao imprimir","Só com internet"],0,"Sim!"],
+["Formatação","Aprovados verdes e reprovados vermelhos: é possível?",["Sim","Não","Só preto e branco","Só com programação"],0,"Basta criar duas regras."],
+["Formatação","Destacar os três maiores valores: qual recurso?",["Regra de primeiros/últimos valores","Validação de data","SOMA","Localizar"],0,"Ajuste a regra para os três maiores."],
+["Formatação","Uma nota muda de 5 para 9. A cor pode mudar automaticamente?",["Sim","Não","Após reiniciar","Só em PDF"],0,"A regra é reavaliada."],
+["Formatação","Como destacar frequências abaixo de 75%?",["Regra condicional menor que 75","SOMA","Comentário","Aumentar fonte"],0,"Use formatação condicional."],
+["Desafio","A fórmula =SE(10>=7;\"REPROVADO\";\"APROVADO\") mostra o quê?",["APROVADO","REPROVADO","10","ERRO"],1,"A condição é verdadeira e o segundo argumento é REPROVADO. A fórmula foi montada com os resultados invertidos!"],
+["Desafio","Se o Excel fosse uma pessoa, qual profissão teria?",["Professor","Contador","Detetive","Todas podem ser respostas criativas"],3,"Pergunta divertida: vale a criatividade!"],
+["Desafio","A atividade vale de 0 a 10. Como impedir nota 100?",["Validação de dados","Formatação condicional","SOMA","Itálico"],0,"Defina limites de 0 a 10."],
+["Desafio","Qual conjunto reúne somente recursos estudados?",["SOMA, SE e formatação condicional","Paint, câmera e calculadora","Bluetooth, Wi-Fi e impressora","Papel de parede e áudio"],0,"SOMA, SE e formatação condicional."]
+];
+
+let indice=0, pontos=0, acertos=0, bloqueado=false;
+let nomeAluno="", nomeEquipe="";
+
+function comecar(){
+ nomeAluno=document.getElementById("nome").value.trim();
+ nomeEquipe=document.getElementById("equipe").value.trim();
+ if(!nomeAluno||!nomeEquipe){alert("Preencha seu nome e sua equipe!");return}
+ document.getElementById("inicio").classList.add("hidden");
+ document.getElementById("jogo").classList.remove("hidden");
+ mostrarPergunta();
+}
+
+function mostrarPergunta(){
+ bloqueado=false;
+ const p=perguntas[indice];
+ document.getElementById("numero").textContent=`Pergunta ${indice+1} de ${perguntas.length}`;
+ document.getElementById("placar").textContent=`⭐ ${pontos} pontos`;
+ document.getElementById("bar").style.width=(indice/perguntas.length*100)+"%";
+ document.getElementById("categoria").textContent="📚 "+p[0];
+ document.getElementById("question").textContent=p[1];
+ document.getElementById("feedback").className="hidden";
+ document.getElementById("proxima").classList.add("hidden");
+ const area=document.getElementById("opcoes");
+ area.innerHTML="";
+ p[2].forEach((texto,i)=>{
+  const b=document.createElement("button");
+  b.className="option";
+  b.textContent="ABCD"[i]+") "+texto;
+  b.onclick=()=>responder(i);
+  area.appendChild(b);
+ });
+}
+
+function responder(escolha){
+ if(bloqueado)return;
+ bloqueado=true;
+ const p=perguntas[indice];
+ const botoes=[...document.querySelectorAll(".option")];
+ botoes.forEach((b,i)=>{
+  b.disabled=true;
+  if(i===p[3])b.classList.add("correct");
+  if(i===escolha&&i!==p[3])b.classList.add("wrong");
+ });
+ const certo=escolha===p[3];
+ if(certo){pontos+=2;acertos++}
+ const f=document.getElementById("feedback");
+ f.textContent=(certo?"🎉 Muito bem! +2 pontos. ":"❌ Não foi dessa vez. ")+p[4];
+ f.className=certo?"good":"bad";
+ document.getElementById("placar").textContent=`⭐ ${pontos} pontos`;
+ const prox=document.getElementById("proxima");
+ prox.textContent=indice===perguntas.length-1?"VER RESULTADO 🏆":"PRÓXIMA PERGUNTA ➜";
+ prox.classList.remove("hidden");
+}
+
+function avancar(){
+ indice++;
+ if(indice<perguntas.length){mostrarPergunta();return}
+ finalizar();
+}
+
+function finalizar(){
+ document.getElementById("jogo").classList.add("hidden");
+ document.getElementById("result").classList.remove("hidden");
+ document.getElementById("mensagem").textContent=`Parabéns, ${nomeAluno}, da equipe ${nomeEquipe}!`;
+ document.getElementById("pontosFinal").textContent=pontos+" / 100";
+ document.getElementById("acertosFinal").textContent=`Você acertou ${acertos} de 50 perguntas. Aproveitamento: ${Math.round(acertos/50*100)}%.`;
+ document.getElementById("bar").style.width="100%";
+ enviarResultado();
+}
+
+function enviarResultado(){
+ const status=document.getElementById("envio");
+ if(!URL_PLANILHA.startsWith("https://script.google.com/") || URL_PLANILHA.includes("COLE_AQUI")){
+  status.textContent="⚠️ Falta configurar a URL do banco de notas.";
+  return;
+ }
+ status.textContent="⏳ Enviando resultado...";
+ fetch(URL_PLANILHA,{
+  method:"POST",
+  mode:"no-cors",
+  headers:{"Content-Type":"text/plain;charset=utf-8"},
+  body:JSON.stringify({
+   nome:nomeAluno,
+   equipe:nomeEquipe,
+   pontos:pontos,
+   acertos:acertos,
+   total:50
+  })
+ }).then(()=>{
+  status.textContent="📨 Envio realizado. O professor poderá conferir o resultado na planilha.";
+ }).catch(()=>{
+  status.textContent="⚠️ Não foi possível confirmar o envio. Avise o professor.";
+ });
+}
+</script>
+</body>
+</html>
